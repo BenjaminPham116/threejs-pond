@@ -1,5 +1,6 @@
 {
-  "name": "three-demo",
+  "homepage": "https://benjaminpham116.github.io/threejs-pond/",
+  "name": "three-pond",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
