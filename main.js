@@ -82,7 +82,7 @@ var waterUniform = {
 
 var flowerUniform = {
     uTime: {value: 0.0},
-    uTexture: {value: textureLoader.load('/textures/FlowerPetal.jpg')}
+    uTexture: {value: textureLoader.load('./models/FlowerPetal.jpg')}
 };
 
 
