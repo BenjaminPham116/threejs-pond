@@ -89,7 +89,7 @@ var flowerUniform = {
 // FBX Loader with Basic Material
 const gltfLoader = new GLTFLoader();
 gltfLoader.load(
-    '/models/Water.glb', // Replace with your FBX file path
+    './models/Water.glb', // Replace with your FBX file path
     (gltf) => {
         const object = gltf.scene;
         // Apply MeshBasicMaterial to all meshes
@@ -117,7 +117,7 @@ gltfLoader.load(
 
 function createFlower(position, scale, rotation){
     gltfLoader.load(
-        '/models/Flower.glb', // Replace with your FBX file path
+        './models/Flower.glb', // Replace with your FBX file path
         (gltf) => {
             const object = gltf.scene;
 
@@ -148,7 +148,7 @@ function createFlower(position, scale, rotation){
 
 function createLilyPad(position, scale, rotation){
     gltfLoader.load(
-        '/models/LilyPad.glb', // Replace with your FBX file path
+        './models/LilyPad.glb', // Replace with your FBX file path
         (gltf) => {
             const object = gltf.scene;
 
