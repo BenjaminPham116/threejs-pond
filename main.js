@@ -46,8 +46,8 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(5, 10, 7.5);
 scene.add(directionalLight);
 
-const axes = new THREE.AxesHelper();
-scene.add(axes);
+// const axes = new THREE.AxesHelper();
+// scene.add(axes);
 
 
 const params = {
