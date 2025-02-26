@@ -153,6 +153,12 @@ function createFlower(position, scale, rotation){
 }
 
 
+const padNames = ['LiliPad015','LiliPad019','LiliPad020'];
+var curPad = padNames[1];
+var lastPad = padNames[1];
+var frogLerp = 0;
+const padObjects = [];
+const padMap = new Map();
 function createLilyPad(position, scale, rotation){
     gltfLoader.load(
         './models/LilyPad.glb', // Replace with your FBX file path
@@ -172,6 +178,15 @@ function createLilyPad(position, scale, rotation){
             object.position.set(position.x, position.y, position.z);
             object.scale.setScalar(scale);
             object.rotation.y = rotation;
+            
+            padObjects.push(object.getObjectByName(padNames[0]));
+            padObjects.push(object.getObjectByName(padNames[1]));
+            padObjects.push(object.getObjectByName(padNames[2]));
+
+            padMap.set(padNames[0], object.getObjectByName(padNames[0]));
+            padMap.set(padNames[1], object.getObjectByName(padNames[1]));
+            padMap.set(padNames[2], object.getObjectByName(padNames[2]));
+            
             scene.add(object);
         },
         (xhr) => {
@@ -185,6 +200,7 @@ function createLilyPad(position, scale, rotation){
 
 const mixers = [];
 var jumpAction;
+var frogObject;
 function createFrog(position, scale, rotation){
     gltfLoader.load(
         './models/Frog.glb', // Replace with your FBX file path
@@ -202,7 +218,10 @@ function createFrog(position, scale, rotation){
                     });
                 }
             });
-            object.position.set(position.x, position.y, position.z);
+            frogObject = object;
+            const padPos = padMap.get(curPad).position;
+            object.position.set(padPos.x, padPos.y + .42, padPos.z);
+            
             object.scale.setScalar(scale);
             object.rotation.y = rotation;
             const mixer = new THREE.AnimationMixer(object);
@@ -221,12 +240,26 @@ function createFrog(position, scale, rotation){
     );
 }
 
+// Raycaster and mouse
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function onMouseClick(event) {
+    // Convert mouse position to normalized device coordinates (-1 to +1)
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    
+}
+
+window.addEventListener('mousemove', onMouseClick);
+
 
 createFlower(new Vector3(3.2,0,-1.6), .7, 0);
 createFlower(new Vector3(4.2, 0,-1.2), .8, 100);
 createFlower(new Vector3(3.9,0,-1.8), 1., 0);
 createLilyPad(new Vector3(0,0,0), 1., 0);
-createFrog(new Vector3(0,.42,-1.79), .7, 0);
+createFrog(new Vector3(0,.0,0.), .7, 0);
 
 // Animation loop
 function animate() {
@@ -249,6 +282,8 @@ function animate() {
 }
 
 function updateUniforms(){
+    
+    
     waterUniform.uCameraPos.value = camera.position;
     const delta = clock.getDelta();
     t += delta;
@@ -258,16 +293,50 @@ function updateUniforms(){
     waterUniform.uTime.value = t;
     flowerUniform.uTime.value = t;
     frogUniform.uTime.value = t;
+    frogLerp += delta * 1.6;
+    frogLerp = Math.min(frogLerp, 1);
+    setFrogPos();
 }
 
-document.addEventListener("keydown", onDocumentKeyDown, false);
-function onDocumentKeyDown(event) {
-    var keyCode = event.which;
-    if (keyCode == 32) {
-        jumpAction.reset();
-        jumpAction.setLoop( THREE.LoopOnce );
-        jumpAction.play();
+function setFrogPos(){
+    if(!padMap.has(curPad) || !padMap.has(lastPad) || !frogObject) return;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(padObjects, true);
+
+    if (intersects.length > 0) {
+        if(frogLerp >= 1 && intersects[0].object.name !== curPad){
+            frogLerp = 0;
+            lastPad = curPad;
+            curPad = intersects[0].object.name;
+            jumpAction.reset();
+            jumpAction.setLoop( THREE.LoopOnce );
+            jumpAction.play();
+        }
     }
-};
+    
+    let posInterp = new THREE.Vector3(0,0,0);
+    let posNext = padMap.get(curPad).position;
+    let posCur = padMap.get(lastPad).position;
+    posInterp.lerpVectors(posCur, posNext, frogLerp);
+    frogObject.position.set(posInterp.x, posInterp.y + .42, posInterp.z);
+    if(frogLerp < 1){
+        let lookDir = new THREE.Vector3(0,0,0);
+        lookDir = lookDir.subVectors(posNext, frogObject.position);
+        lookDir.y = 0;
+        frogObject.lookAt(lookDir.add(frogObject.position));
+    }
+    else
+        frogObject.rotation.set(0,0,0);
+}
+
+// document.addEventListener("keydown", onDocumentKeyDown, false);
+// function onDocumentKeyDown(event) {
+//     var keyCode = event.which;
+//     if (keyCode == 32) {
+//         jumpAction.reset();
+//         jumpAction.setLoop( THREE.LoopOnce );
+//         jumpAction.play();
+//     }
+// };
 
 animate();

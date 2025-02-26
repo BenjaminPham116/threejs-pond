@@ -12,9 +12,8 @@ vec2 rand22(vec2 p)
 }
 
 float rand31(vec3 p){
-    p *= vec3(22241.234,9287.31,157.23);
-         
-    return fract(sin(length(p)) * 9684.31);
+    p *= vec3(241.234,87.31,157.23);
+    return fract(sin(length(p)) * 184.31);
 }
 
 vec3 rand33(vec3 p){
