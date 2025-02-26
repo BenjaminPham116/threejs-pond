@@ -4,6 +4,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import noiseLibrary from './shaders/libraries/noiseLibrary.glsl';
 import vertexShader from './shaders/vertex.glsl'
 import floatShader from './shaders/floatVert.glsl'
+import frogShader from './shaders/frogVert.glsl'
 import fragShader from './shaders/frag.glsl'
 import flowerShader from './shaders/flowerFrag.glsl'
 import lilyShader from './shaders/lilyFrag.glsl'
@@ -85,6 +86,12 @@ var flowerUniform = {
     uTexture: {value: textureLoader.load('./models/FlowerPetal.jpg')}
 };
 
+var frogUniform = {
+    uTime: {value: 0.0},
+    uTexture: {value: textureLoader.load('./models/FlowerPetal.jpg')},
+    uniform: {value: THREE.UniformsLib['skinning']},
+};
+
 
 // FBX Loader with Basic Material
 const gltfLoader = new GLTFLoader();
@@ -104,7 +111,7 @@ gltfLoader.load(
                 });
             }
         });
-
+        
         scene.add(object);
     },
     (xhr) => {
@@ -176,11 +183,50 @@ function createLilyPad(position, scale, rotation){
     );
 }
 
+const mixers = [];
+function createFrog(position, scale, rotation){
+    gltfLoader.load(
+        './models/Frog.glb', // Replace with your FBX file path
+        (gltf) => {
+            const object = gltf.scene;
+
+            // Apply MeshBasicMaterial to all meshes
+            object.traverse((child) => {
+                if (child.isMesh) {
+                    child.material = new THREE.ShaderMaterial({
+                        vertexShader: frogShader,
+                        fragmentShader: lilyShader,
+                        uniforms: frogUniform,
+                        skinning: true,
+                    });
+                }
+            });
+            object.position.set(position.x, position.y, position.z);
+            object.scale.setScalar(scale);
+            object.rotation.y = rotation;
+            const mixer = new THREE.AnimationMixer(object);
+            const animations = gltf.animations;
+            const anim = THREE.AnimationClip.findByName(animations, 'Jump');
+            const action = mixer.clipAction(anim);
+            action.play();
+            mixers.push(mixer);
+            scene.add(object);
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        },
+        (error) => {
+            console.error('An error occurred while loading the FBX model:', error);
+        }
+    );
+}
+
 
 createFlower(new Vector3(3.2,0,-1.6), .7, 0);
 createFlower(new Vector3(4.2, 0,-1.2), .8, 100);
 createFlower(new Vector3(3.9,0,-1.8), 1., 0);
 createLilyPad(new Vector3(0,0,0), 1., 0);
+createFrog(new Vector3(0,.4,-1.79), 1., 0);
 
 // Animation loop
 function animate() {
@@ -204,10 +250,14 @@ function animate() {
 
 function updateUniforms(){
     waterUniform.uCameraPos.value = camera.position;
-    
-    t += clock.getDelta();
+    const delta = clock.getDelta();
+    t += delta;
+    for ( const mixer of mixers ){
+        mixer.update( delta );
+    } 
     waterUniform.uTime.value = t;
     flowerUniform.uTime.value = t;
+    frogUniform.uTime.value = t;
 }
 
 animate();
