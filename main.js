@@ -88,7 +88,7 @@ var flowerUniform = {
 
 var frogUniform = {
     uTime: {value: 0.0},
-    uTexture: {value: textureLoader.load('./models/FlowerPetal.jpg')},
+    uTexture: {value: textureLoader.load('./models/Frog.jpg')},
     uniform: {value: THREE.UniformsLib['skinning']},
 };
 
@@ -184,6 +184,7 @@ function createLilyPad(position, scale, rotation){
 }
 
 const mixers = [];
+var jumpAction;
 function createFrog(position, scale, rotation){
     gltfLoader.load(
         './models/Frog.glb', // Replace with your FBX file path
@@ -195,7 +196,7 @@ function createFrog(position, scale, rotation){
                 if (child.isMesh) {
                     child.material = new THREE.ShaderMaterial({
                         vertexShader: frogShader,
-                        fragmentShader: lilyShader,
+                        fragmentShader: flowerShader,
                         uniforms: frogUniform,
                         skinning: true,
                     });
@@ -207,8 +208,7 @@ function createFrog(position, scale, rotation){
             const mixer = new THREE.AnimationMixer(object);
             const animations = gltf.animations;
             const anim = THREE.AnimationClip.findByName(animations, 'Jump');
-            const action = mixer.clipAction(anim);
-            action.play();
+            jumpAction = mixer.clipAction(anim);
             mixers.push(mixer);
             scene.add(object);
         },
@@ -226,7 +226,7 @@ createFlower(new Vector3(3.2,0,-1.6), .7, 0);
 createFlower(new Vector3(4.2, 0,-1.2), .8, 100);
 createFlower(new Vector3(3.9,0,-1.8), 1., 0);
 createLilyPad(new Vector3(0,0,0), 1., 0);
-createFrog(new Vector3(0,.4,-1.79), 1., 0);
+createFrog(new Vector3(0,.42,-1.79), .7, 0);
 
 // Animation loop
 function animate() {
@@ -259,5 +259,15 @@ function updateUniforms(){
     flowerUniform.uTime.value = t;
     frogUniform.uTime.value = t;
 }
+
+document.addEventListener("keydown", onDocumentKeyDown, false);
+function onDocumentKeyDown(event) {
+    var keyCode = event.which;
+    if (keyCode == 32) {
+        jumpAction.reset();
+        jumpAction.setLoop( THREE.LoopOnce );
+        jumpAction.play();
+    }
+};
 
 animate();
