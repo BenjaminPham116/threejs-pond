@@ -96,7 +96,7 @@ var frogUniform = {
 function createText(position, text, transparent, opacity, index){
     const fontLoader = new FontLoader();
     fontLoader.load(
-        'node_modules/three/examples/fonts/droid/droid_sans_regular.typeface.json', // Replace with your FBX file path
+        './models/droid_sans_mono_regular.typeface.json', 
         (droidFont) => {
             const textGeometry = new TextGeometry(text, {
                 height: .2,
