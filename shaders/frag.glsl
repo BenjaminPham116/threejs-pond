@@ -70,7 +70,7 @@ void main() {
   //circle mask
   uv -= .5;
   uv *= 2.;
-  color.a = smoothstep(0.,.5,1. - dot(uv,uv) - water * .5);
+  color.a = smoothstep(0.,.5, 1. - dot(uv,uv) - water * .5 - max(0.,(1. - smoothstep(0.,1.,pow(uTime * .3,.3)))));
   color.rgb *= vec3(dot(1. - normalize(vec3(0.,1.,0.) + vec3(1.,0.,1.) * water * 2.), vec3(0.,.75,.75)));
   
   //color.a *= pow(depth,10.);

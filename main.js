@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
+import {FontLoader} from 'three/src/loaders/FontLoader';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import noiseLibrary from './shaders/libraries/noiseLibrary.glsl';
 import vertexShader from './shaders/vertex.glsl'
@@ -11,7 +12,7 @@ import lilyShader from './shaders/lilyFrag.glsl'
 import {ShaderPass} from "three/examples/jsm/postprocessing/ShaderPass";
 import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
-import {Vector3} from "three";
+import {TextGeometry, Vector3} from "three";
 
 THREE.ShaderChunk['noiseLibrary'] = noiseLibrary;
 
@@ -92,6 +93,36 @@ var frogUniform = {
     uniform: {value: THREE.UniformsLib['skinning']},
 };
 
+function createText(position, text, transparent, opacity, index){
+    const fontLoader = new FontLoader();
+    fontLoader.load(
+        'node_modules/three/examples/fonts/droid/droid_sans_regular.typeface.json', // Replace with your FBX file path
+        (droidFont) => {
+            const textGeometry = new TextGeometry(text, {
+                height: .2,
+                size: 1,
+                font: droidFont,
+            });
+
+            const textMaterial = new THREE.MeshPhongMaterial({
+                transparent: transparent,
+                opacity: opacity,
+                depthWrite: false,
+            });
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.set(position.x, position.y, position.z);
+            textMap.set(index, textMesh);
+            scene.add(textMesh);
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        },
+        (error) => {
+            console.error('An error occurred while loading the Font:', error);
+        }
+    );
+}
+
 
 // FBX Loader with Basic Material
 const gltfLoader = new GLTFLoader();
@@ -159,6 +190,7 @@ var lastPad = padNames[1];
 var frogLerp = 0;
 const padObjects = [];
 const padMap = new Map();
+const textMap = new Map();
 function createLilyPad(position, scale, rotation){
     gltfLoader.load(
         './models/LilyPad.glb', // Replace with your FBX file path
@@ -260,6 +292,9 @@ createFlower(new Vector3(4.2, 0,-1.2), .8, 100);
 createFlower(new Vector3(3.9,0,-1.8), 1., 0);
 createLilyPad(new Vector3(0,0,0), 1., 0);
 createFrog(new Vector3(0,.0,0.), .7, 0);
+createText(new Vector3(-6.5, 3, 1.5),'Woah',true, 0.,  padNames[0])
+createText(new Vector3(-.5, 3, -4), ':D',true, 0., padNames[1])
+createText(new Vector3(5, 3, 2),'-_-', true, 0., padNames[2])
 
 // Animation loop
 function animate() {
@@ -296,23 +331,13 @@ function updateUniforms(){
     frogLerp += delta * 1.6;
     frogLerp = Math.min(frogLerp, 1);
     setFrogPos();
+    ChangePad();
+    floatText();
 }
 
 function setFrogPos(){
     if(!padMap.has(curPad) || !padMap.has(lastPad) || !frogObject) return;
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(padObjects, true);
-
-    if (intersects.length > 0) {
-        if(frogLerp >= 1 && intersects[0].object.name !== curPad){
-            frogLerp = 0;
-            lastPad = curPad;
-            curPad = intersects[0].object.name;
-            jumpAction.reset();
-            jumpAction.setLoop( THREE.LoopOnce );
-            jumpAction.play();
-        }
-    }
+   
     
     let posInterp = new THREE.Vector3(0,0,0);
     let posNext = padMap.get(curPad).position;
@@ -329,14 +354,44 @@ function setFrogPos(){
         frogObject.rotation.set(0,0,0);
 }
 
-// document.addEventListener("keydown", onDocumentKeyDown, false);
-// function onDocumentKeyDown(event) {
-//     var keyCode = event.which;
-//     if (keyCode == 32) {
-//         jumpAction.reset();
-//         jumpAction.setLoop( THREE.LoopOnce );
-//         jumpAction.play();
-//     }
-// };
+function ChangePad(){
+    if(!padMap.has(curPad) || !padMap.has(lastPad) || !frogObject || t < 2) return;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(padObjects, true);
+    if (intersects.length > 0) {
+        let padName = intersects[0].object.name;
+        if(frogLerp >= 1 && intersects[0].object.name !== curPad){
+            frogLerp = 0;
+            lastPad = curPad;
+            curPad = intersects[0].object.name;
+            jumpAction.reset();
+            jumpAction.setLoop( THREE.LoopOnce );
+            jumpAction.play();
+            console.log(textMap);
+
+            
+        }
+    }
+}
+
+function floatText(){
+    padNames.forEach(pad => {
+        let curText = textMap.get(pad);
+        if(curText){
+            if(pad !== curPad){
+                curText.material.opacity = THREE.MathUtils.lerp(curText.material.opacity, 0, frogLerp);
+                curText.position.y = (THREE.MathUtils.lerp(3, 0, Math.pow(frogLerp,.2)));
+            }
+            else{
+                curText.material.opacity = THREE.MathUtils.lerp(curText.material.opacity, 1, frogLerp);
+                curText.position.y = (THREE.MathUtils.lerp(0, 3, Math.pow(frogLerp,.2)));
+            }
+        }
+    })
+}
+
+function animateText(){
+    
+}
 
 animate();
